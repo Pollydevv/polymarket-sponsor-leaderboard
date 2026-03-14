@@ -227,43 +227,87 @@ async function buildFullSponsorData() {
   try {
     const { sponsoredLogs, withdrawnLogs } = await scanChain();
 
-    // Track which addresses came from betmoar to avoid double counting
+    // Build a per-sponsor, per-market sponsorship tracker from chain events
+    // so we can calculate consumed in real-time for active/non-withdrawn sponsorships
+    const sponsorships = new Map(); // key: sponsor+marketId -> { amount, startTime, endTime, withdrawn, ... }
+
+    for (const log of sponsoredLogs) {
+      const event = parseSponsoredLog(log);
+      const key = event.sponsor + '_' + event.marketId;
+      sponsorships.set(key, {
+        ...event,
+        withdrawn: false,
+        withdrawnConsumed: 0,
+        withdrawnReturned: 0
+      });
+    }
+
+    // Mark withdrawn sponsorships with actual consumed/returned values
+    for (const log of withdrawnLogs) {
+      const event = parseWithdrawnLog(log);
+      const key = event.sponsor + '_' + event.marketId;
+      if (sponsorships.has(key)) {
+        const sp = sponsorships.get(key);
+        sp.withdrawn = true;
+        sp.withdrawnConsumed = event.consumedAmount;
+        sp.withdrawnReturned = event.returnedAmount;
+      }
+    }
+
+    // Now aggregate per sponsor with real-time consumed calculation
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    // Track which addresses came from betmoar to avoid double counting amounts
     const betmoarAddrs = new Set(
       (betmoarData.topSponsors || []).map(s => s.sponsor.toLowerCase())
     );
 
-    for (const log of sponsoredLogs) {
-      const event = parseSponsoredLog(log);
-      if (!allSponsors.has(event.sponsor)) {
-        allSponsors.set(event.sponsor, {
-          sponsor: event.sponsor, event_count: 0, unique_markets: 0,
+    for (const [, sp] of sponsorships) {
+      if (!allSponsors.has(sp.sponsor)) {
+        allSponsors.set(sp.sponsor, {
+          sponsor: sp.sponsor, event_count: 0, unique_markets: 0,
           total_amount_usdc: 0, first_seen: null, last_seen: null,
           withdrawn_count: 0, total_returned_usdc: 0, total_consumed_usdc: 0,
           net_amount_usdc: 0, _markets: new Set()
         });
       }
-      const s = allSponsors.get(event.sponsor);
+
+      const s = allSponsors.get(sp.sponsor);
       if (!s._markets) s._markets = new Set();
+      s._markets.add(sp.marketId);
 
       // Only add amounts if not already counted from betmoar's topSponsors
-      if (!betmoarAddrs.has(event.sponsor)) {
+      if (!betmoarAddrs.has(sp.sponsor)) {
         s.event_count++;
-        s.total_amount_usdc += event.amount;
+        s.total_amount_usdc += sp.amount;
+
+        if (sp.withdrawn) {
+          // Use actual onchain values
+          s.withdrawn_count++;
+          s.total_consumed_usdc += sp.withdrawnConsumed;
+          s.total_returned_usdc += sp.withdrawnReturned;
+        } else {
+          // Calculate consumed in real-time based on elapsed time and rate
+          const durationSec = sp.endTime - sp.startTime;
+          if (durationSec > 0) {
+            const ratePerSec = sp.amount / durationSec;
+            const elapsedSec = Math.min(nowSec, sp.endTime) - sp.startTime;
+            const elapsed = Math.max(0, elapsedSec);
+            const consumed = Math.min(sp.amount, ratePerSec * elapsed);
+            s.total_consumed_usdc += consumed;
+            // If sponsorship has fully expired, returned = 0
+            // If still active, returned is what's left (but not yet claimable)
+            if (nowSec >= sp.endTime) {
+              // Fully expired, all consumed (no refund since it ran to completion)
+              // consumed already = amount in this case
+            }
+          }
+        }
       }
-      s._markets.add(event.marketId);
-      const ts = new Date(event.startTime * 1000).toISOString();
+
+      const ts = new Date(sp.startTime * 1000).toISOString();
       if (!s.first_seen || ts < s.first_seen) s.first_seen = ts;
       if (!s.last_seen || ts > s.last_seen) s.last_seen = ts;
-    }
-
-    for (const log of withdrawnLogs) {
-      const event = parseWithdrawnLog(log);
-      if (allSponsors.has(event.sponsor) && !betmoarAddrs.has(event.sponsor)) {
-        const s = allSponsors.get(event.sponsor);
-        s.withdrawn_count++;
-        s.total_returned_usdc += event.returnedAmount;
-        s.total_consumed_usdc += event.consumedAmount;
-      }
     }
 
     console.log(`After chain scan: ${allSponsors.size} sponsors`);
@@ -274,9 +318,10 @@ async function buildFullSponsorData() {
   // Finalize
   for (const [, s] of allSponsors) {
     if (s._markets) { s.unique_markets = Math.max(s.unique_markets || 0, s._markets.size); delete s._markets; }
-    if (!s.net_amount_usdc || s.net_amount_usdc === 0) {
-      s.net_amount_usdc = s.total_amount_usdc - (s.total_returned_usdc || 0);
-    }
+    // For chain-scanned sponsors, returned = total_funded - consumed (for non-withdrawn)
+    // For betmoar sponsors, returned is already set correctly
+    s.total_returned_usdc = s.total_returned_usdc || 0;
+    s.net_amount_usdc = s.total_consumed_usdc || 0; // net spent = what actually went to LPs
   }
 
   const sponsorList = [...allSponsors.values()]
