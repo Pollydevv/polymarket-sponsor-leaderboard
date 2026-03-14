@@ -185,6 +185,10 @@
       color: #8b5cf6;
     }
 
+    th[title], .stat-card[title] {
+      cursor: help;
+    }
+
     th .sort-arrow {
       margin-left: 4px;
       font-size: 10px;
@@ -441,7 +445,6 @@
       <button class="sort-btn" data-sort="net_amount_usdc">Net Spent</button>
       <button class="sort-btn" data-sort="total_consumed_usdc">Consumed</button>
       <button class="sort-btn" data-sort="unique_markets">Markets</button>
-      <button class="sort-btn" data-sort="event_count">Events</button>
     </div>
   </div>
 
@@ -594,27 +597,27 @@
       if (!state.data) { el.innerHTML = ''; return; }
       const o = state.data.overall;
       el.innerHTML = `
-        <div class="stat-card">
+        <div class="stat-card" title="Total USDC deposited into the rewards contract by all sponsors">
           <div class="label">Total Funded</div>
           <div class="value green">${fmtUSD(o.total_amount_usdc)}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" title="USDC already paid out to liquidity providers as rewards">
           <div class="label">Consumed</div>
           <div class="value orange">${fmtUSD(o.total_consumed_usdc)}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" title="USDC refunded to sponsors from cancelled or expired sponsorships">
           <div class="label">Returned</div>
           <div class="value">${fmtUSD(o.total_returned_usdc)}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" title="Total unique wallet addresses that have sponsored at least one market">
           <div class="label">Unique Sponsors</div>
           <div class="value purple">${fmtNum(o.unique_sponsors)}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" title="Total distinct prediction markets that have received sponsored rewards">
           <div class="label">Unique Markets</div>
           <div class="value blue">${fmtNum(o.unique_markets)}</div>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" title="Total number of individual sponsorship transactions created">
           <div class="label">Total Events</div>
           <div class="value">${fmtNum(o.total_events)}</div>
         </div>
@@ -727,13 +730,11 @@
             <thead><tr>
               <th style="width:50px">#</th>
               <th>Sponsor</th>
-              <th onclick="toggleSort('total_amount_usdc')">Total Funded ${sortArrow('total_amount_usdc')}</th>
-              <th onclick="toggleSort('net_amount_usdc')">Net Spent ${sortArrow('net_amount_usdc')}</th>
-              <th onclick="toggleSort('total_consumed_usdc')">Consumed ${sortArrow('total_consumed_usdc')}</th>
-              <th onclick="toggleSort('total_returned_usdc')">Returned ${sortArrow('total_returned_usdc')}</th>
-              <th onclick="toggleSort('unique_markets')">Markets ${sortArrow('unique_markets')}</th>
-              <th onclick="toggleSort('event_count')">Events ${sortArrow('event_count')}</th>
-              <th>First Seen</th>
+              <th onclick="toggleSort('total_amount_usdc')" title="Total USDC deposited into the rewards contract across all sponsorships">Total Funded ${sortArrow('total_amount_usdc')}</th>
+              <th onclick="toggleSort('net_amount_usdc')" title="Total funded minus refunds — the actual USDC committed to rewarding liquidity providers">Net Spent ${sortArrow('net_amount_usdc')}</th>
+              <th onclick="toggleSort('total_consumed_usdc')" title="USDC already distributed to liquidity providers as rewards">Consumed ${sortArrow('total_consumed_usdc')}</th>
+              <th onclick="toggleSort('total_returned_usdc')" title="USDC refunded back to the sponsor from cancelled or expired sponsorships">Returned ${sortArrow('total_returned_usdc')}</th>
+              <th onclick="toggleSort('unique_markets')" title="Number of distinct markets this sponsor has added rewards to">Markets ${sortArrow('unique_markets')}</th>
               <th>Last Seen</th>
             </tr></thead>
             <tbody>
@@ -757,8 +758,6 @@
                   <td class="amount consumed">${fmtUSD(s.total_consumed_usdc)}</td>
                   <td class="amount returned">${fmtUSD(s.total_returned_usdc)}</td>
                   <td><span class="badge badge-markets">${s.unique_markets}</span></td>
-                  <td>${s.event_count}</td>
-                  <td style="color:#6b7280">${timeAgo(s.first_seen)}</td>
                   <td style="color:#6b7280">${timeAgo(s.last_seen)}</td>
                 </tr>`;
               }).join('')}
