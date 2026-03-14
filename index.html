@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polymarket Sponsor Leaderboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0e17;
+      color: #e1e5ee;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #0f1629 0%, #1a1f3a 100%);
+      border-bottom: 1px solid #1e2745;
+      padding: 24px 32px;
+    }
+
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 14px;
+      color: #8892b0;
+    }
+
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      max-width: 1400px;
+      margin: 24px auto;
+      padding: 0 32px;
+    }
+
+    .stat-card {
+      background: #111827;
+      border: 1px solid #1e2745;
+      border-radius: 12px;
+      padding: 16px 20px;
+    }
+
+    .stat-card .label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .stat-card .value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #f9fafb;
+    }
+
+    .stat-card .value.green { color: #10b981; }
+    .stat-card .value.purple { color: #8b5cf6; }
+    .stat-card .value.blue { color: #3b82f6; }
+    .stat-card .value.orange { color: #f59e0b; }
+
+    .controls {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px 32px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 280px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 10px 16px 10px 40px;
+      background: #111827;
+      border: 1px solid #1e2745;
+      border-radius: 8px;
+      color: #e1e5ee;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box input:focus {
+      border-color: #6366f1;
+    }
+
+    .search-box input::placeholder {
+      color: #4b5563;
+    }
+
+    .search-box svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #4b5563;
+    }
+
+    .sort-btns {
+      display: flex;
+      gap: 4px;
+      background: #111827;
+      border: 1px solid #1e2745;
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .sort-btn {
+      padding: 6px 14px;
+      border: none;
+      background: transparent;
+      color: #8892b0;
+      font-size: 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .sort-btn.active {
+      background: #6366f1;
+      color: white;
+    }
+
+    .sort-btn:hover:not(.active) {
+      background: #1e2745;
+    }
+
+    .table-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 32px 32px;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #1e2745;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    thead {
+      background: #111827;
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 1px solid #1e2745;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    th:hover {
+      color: #8b5cf6;
+    }
+
+    th .sort-arrow {
+      margin-left: 4px;
+      font-size: 10px;
+    }
+
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #1a1f35;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    tr:hover td {
+      background: #111827;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .rank {
+      font-weight: 700;
+      color: #6b7280;
+      width: 50px;
+    }
+
+    .rank-1 { color: #fbbf24; }
+    .rank-2 { color: #9ca3af; }
+    .rank-3 { color: #cd7f32; }
+
+    .sponsor-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #1e2745;
+      flex-shrink: 0;
+      object-fit: cover;
+    }
+
+    .sponsor-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sponsor-name {
+      font-weight: 600;
+      color: #f9fafb;
+      font-size: 14px;
+    }
+
+    .sponsor-address {
+      font-size: 12px;
+      color: #4b5563;
+      font-family: 'Courier New', monospace;
+    }
+
+    .sponsor-address a {
+      color: #4b5563;
+      text-decoration: none;
+    }
+
+    .sponsor-address a:hover {
+      color: #6366f1;
+    }
+
+    .amount {
+      font-weight: 600;
+      color: #10b981;
+    }
+
+    .amount.consumed { color: #f59e0b; }
+    .amount.returned { color: #6b7280; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge-markets {
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 32px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #1e2745;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 16px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .error-container {
+      text-align: center;
+      padding: 80px 32px;
+    }
+
+    .error-container h2 {
+      color: #ef4444;
+      margin-bottom: 8px;
+    }
+
+    .error-container button {
+      margin-top: 16px;
+      padding: 8px 20px;
+      background: #6366f1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 20px 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .page-btn {
+      padding: 6px 12px;
+      background: #111827;
+      border: 1px solid #1e2745;
+      border-radius: 6px;
+      color: #8892b0;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      background: #1e2745;
+      color: white;
+    }
+
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .page-btn.active {
+      background: #6366f1;
+      border-color: #6366f1;
+      color: white;
+    }
+
+    .page-info {
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .result-count {
+      color: #6b7280;
+      font-size: 13px;
+      padding: 0 4px;
+    }
+
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      background: #111827;
+      border: 1px solid #1e2745;
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .tab-btn {
+      padding: 6px 14px;
+      border: none;
+      background: transparent;
+      color: #8892b0;
+      font-size: 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      background: #6366f1;
+      color: white;
+    }
+
+    .tab-btn:hover:not(.active) {
+      background: #1e2745;
+    }
+
+    @media (max-width: 768px) {
+      .header { padding: 16px; }
+      .stats-bar { padding: 0 16px; grid-template-columns: repeat(2, 1fr); }
+      .controls { padding: 12px 16px; }
+      .table-container { padding: 0 16px 16px; }
+      .pagination { padding: 16px; }
+      td, th { padding: 8px 10px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-inner">
+      <h1>Polymarket Sponsor Leaderboard</h1>
+      <p>Track all users sponsoring market rewards on Polymarket</p>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="stats-bar"></div>
+
+  <div class="controls">
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </svg>
+      <input type="text" id="search" placeholder="Search by username, address, or market...">
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="leaderboard">Leaderboard</button>
+      <button class="tab-btn" data-tab="active">Active Sponsorships</button>
+      <button class="tab-btn" data-tab="recent">Recent</button>
+      <button class="tab-btn" data-tab="withdrawals">Withdrawals</button>
+    </div>
+    <div class="sort-btns" id="sort-btns">
+      <button class="sort-btn active" data-sort="total_amount_usdc">Total Funded</button>
+      <button class="sort-btn" data-sort="net_amount_usdc">Net Spent</button>
+      <button class="sort-btn" data-sort="total_consumed_usdc">Consumed</button>
+      <button class="sort-btn" data-sort="unique_markets">Markets</button>
+      <button class="sort-btn" data-sort="event_count">Events</button>
+    </div>
+  </div>
+
+  <div id="result-count" class="controls"><span class="result-count"></span></div>
+  <div class="table-container" id="table-container"></div>
+  <div class="pagination" id="pagination"></div>
+
+  <script>
+    const API_URL = '/api/sponsored-rewards';
+    const PROFILE_URL = '/api/profile';
+    const PAGE_SIZE = 50;
+
+    let state = {
+      data: null,
+      profiles: {},
+      currentTab: 'leaderboard',
+      sortField: 'total_amount_usdc',
+      sortDir: 'desc',
+      searchQuery: '',
+      page: 1,
+      loading: true,
+      error: null,
+      profileQueue: [],
+      loadingProfiles: false
+    };
+
+    // Format currency
+    function fmtUSD(n) {
+      if (n == null) return '$0.00';
+      if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(2) + 'M';
+      if (n >= 1_000) return '$' + (n / 1_000).toFixed(2) + 'K';
+      return '$' + n.toFixed(2);
+    }
+
+    function fmtNum(n) {
+      if (n == null) return '0';
+      return n.toLocaleString();
+    }
+
+    function shortAddr(addr) {
+      if (!addr) return '';
+      return addr.slice(0, 6) + '...' + addr.slice(-4);
+    }
+
+    function timeAgo(dateStr) {
+      if (!dateStr) return '';
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 60) return mins + 'm ago';
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return hrs + 'h ago';
+      const days = Math.floor(hrs / 24);
+      return days + 'd ago';
+    }
+
+    // Fetch data
+    async function fetchData() {
+      state.loading = true;
+      state.error = null;
+      render();
+
+      try {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error('API returned ' + res.status);
+        state.data = await res.json();
+        state.loading = false;
+
+        // Queue profile lookups for first 200 sponsors
+        if (state.data.topSponsors) {
+          state.profileQueue = state.data.topSponsors.slice(0, 200).map(s => s.sponsor);
+          loadProfiles();
+        }
+      } catch (e) {
+        state.error = e.message;
+        state.loading = false;
+      }
+      render();
+    }
+
+    // Load profiles in batches
+    async function loadProfiles() {
+      if (state.loadingProfiles) return;
+      state.loadingProfiles = true;
+
+      const batch = state.profileQueue.splice(0, 10);
+      for (const addr of batch) {
+        if (state.profiles[addr]) continue;
+        try {
+          const res = await fetch(PROFILE_URL + '?address=' + addr);
+          if (res.ok) {
+            const data = await res.json();
+            state.profiles[addr] = {
+              name: data.name || data.username || shortAddr(addr),
+              avatar: data.profileImage || null
+            };
+          } else {
+            state.profiles[addr] = { name: shortAddr(addr), avatar: null };
+          }
+        } catch {
+          state.profiles[addr] = { name: shortAddr(addr), avatar: null };
+        }
+      }
+
+      state.loadingProfiles = false;
+      render();
+
+      if (state.profileQueue.length > 0) {
+        setTimeout(loadProfiles, 100);
+      }
+    }
+
+    function getProfile(addr) {
+      if (state.profiles[addr]) return state.profiles[addr];
+      // Queue if not yet loaded
+      if (!state.profileQueue.includes(addr) && !state.profiles[addr]) {
+        state.profileQueue.push(addr);
+        if (!state.loadingProfiles) setTimeout(loadProfiles, 50);
+      }
+      return { name: shortAddr(addr), avatar: null };
+    }
+
+    // Render stats bar
+    function renderStats() {
+      const el = document.getElementById('stats-bar');
+      if (!state.data) { el.innerHTML = ''; return; }
+      const o = state.data.overall;
+      el.innerHTML = `
+        <div class="stat-card">
+          <div class="label">Total Funded</div>
+          <div class="value green">${fmtUSD(o.total_amount_usdc)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Consumed</div>
+          <div class="value orange">${fmtUSD(o.total_consumed_usdc)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Returned</div>
+          <div class="value">${fmtUSD(o.total_returned_usdc)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Unique Sponsors</div>
+          <div class="value purple">${fmtNum(o.unique_sponsors)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Unique Markets</div>
+          <div class="value blue">${fmtNum(o.unique_markets)}</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Total Events</div>
+          <div class="value">${fmtNum(o.total_events)}</div>
+        </div>
+      `;
+    }
+
+    function matchSearch(s, q) {
+      const addr = (s.sponsor || '').toLowerCase();
+      const profile = state.profiles[addr] || state.profiles[s.sponsor] || {};
+      const name = (profile.name || '').toLowerCase();
+      const market = (s.market_question || '').toLowerCase();
+      return addr.includes(q) || name.includes(q) || market.includes(q);
+    }
+
+    // Filter & sort data
+    function getFilteredData() {
+      if (!state.data) return [];
+      const q = state.searchQuery.toLowerCase();
+
+      if (state.currentTab === 'leaderboard') {
+        let items = [...(state.data.topSponsors || [])];
+        // Sort first to assign global ranks
+        items.sort((a, b) => {
+          const av = a[state.sortField] || 0;
+          const bv = b[state.sortField] || 0;
+          return state.sortDir === 'desc' ? bv - av : av - bv;
+        });
+        // Assign global rank before filtering
+        items.forEach((s, i) => { s._globalRank = i + 1; });
+        if (q) {
+          items = items.filter(s => {
+            const addr = (s.sponsor || '').toLowerCase();
+            const profile = state.profiles[addr] || state.profiles[s.sponsor] || {};
+            const name = (profile.name || '').toLowerCase();
+            return addr.includes(q) || name.includes(q);
+          });
+        }
+        return items;
+      }
+
+      if (state.currentTab === 'active') {
+        let items = [...(state.data.active || [])];
+        if (q) {
+          items = items.filter(s => matchSearch(s, q));
+        }
+        items.sort((a, b) => (b.amount_usdc || 0) - (a.amount_usdc || 0));
+        return items;
+      }
+
+      if (state.currentTab === 'recent') {
+        let items = [...(state.data.recent || [])];
+        if (q) {
+          items = items.filter(s => matchSearch(s, q));
+        }
+        return items;
+      }
+
+      if (state.currentTab === 'withdrawals') {
+        let items = [...(state.data.recentWithdrawals || [])];
+        if (q) {
+          items = items.filter(s => matchSearch(s, q));
+        }
+        return items;
+      }
+
+      return [];
+    }
+
+    function renderTable() {
+      const container = document.getElementById('table-container');
+      const pagEl = document.getElementById('pagination');
+      const countEl = document.getElementById('result-count');
+
+      if (state.loading) {
+        container.innerHTML = `
+          <div class="loading-container">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading sponsor data...</div>
+          </div>`;
+        pagEl.innerHTML = '';
+        countEl.innerHTML = '';
+        return;
+      }
+
+      if (state.error) {
+        container.innerHTML = `
+          <div class="error-container">
+            <h2>Failed to load data</h2>
+            <p style="color:#6b7280">${state.error}</p>
+            <button onclick="fetchData()">Retry</button>
+          </div>`;
+        pagEl.innerHTML = '';
+        countEl.innerHTML = '';
+        return;
+      }
+
+      const items = getFilteredData();
+      const totalPages = Math.ceil(items.length / PAGE_SIZE);
+      if (state.page > totalPages) state.page = 1;
+      const start = (state.page - 1) * PAGE_SIZE;
+      const pageItems = items.slice(start, start + PAGE_SIZE);
+
+      const totalCount = state.currentTab === 'leaderboard' ? (state.data.topSponsors || []).length : items.length;
+      const filtered = state.searchQuery && items.length < totalCount;
+      countEl.innerHTML = `<span class="result-count">Showing ${items.length > 0 ? start + 1 : 0}-${Math.min(start + PAGE_SIZE, items.length)} of ${items.length}${filtered ? ' matches (out of ' + totalCount.toLocaleString() + ' total)' : ' results'}</span>`;
+
+      if (state.currentTab === 'leaderboard') {
+        container.innerHTML = `
+          <table>
+            <thead><tr>
+              <th style="width:50px">#</th>
+              <th>Sponsor</th>
+              <th onclick="toggleSort('total_amount_usdc')">Total Funded ${sortArrow('total_amount_usdc')}</th>
+              <th onclick="toggleSort('net_amount_usdc')">Net Spent ${sortArrow('net_amount_usdc')}</th>
+              <th onclick="toggleSort('total_consumed_usdc')">Consumed ${sortArrow('total_consumed_usdc')}</th>
+              <th onclick="toggleSort('total_returned_usdc')">Returned ${sortArrow('total_returned_usdc')}</th>
+              <th onclick="toggleSort('unique_markets')">Markets ${sortArrow('unique_markets')}</th>
+              <th onclick="toggleSort('event_count')">Events ${sortArrow('event_count')}</th>
+              <th>First Seen</th>
+              <th>Last Seen</th>
+            </tr></thead>
+            <tbody>
+              ${pageItems.map((s, i) => {
+                const rank = s._globalRank || (start + i + 1);
+                const profile = getProfile(s.sponsor);
+                const rankClass = rank <= 3 ? ' rank-' + rank : '';
+                return `<tr>
+                  <td class="rank${rankClass}">${rank}</td>
+                  <td>
+                    <div class="sponsor-cell">
+                      <img class="avatar" src="${profile.avatar || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect fill=%22%231e2745%22 width=%2232%22 height=%2232%22 rx=%2216%22/><text x=%2216%22 y=%2221%22 text-anchor=%22middle%22 fill=%22%236b7280%22 font-size=%2214%22>${profile.name[0].toUpperCase()}</text></svg>'}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect fill=%22%231e2745%22 width=%2232%22 height=%2232%22 rx=%2216%22/></svg>'">
+                      <div class="sponsor-info">
+                        <span class="sponsor-name">${escHtml(profile.name)}</span>
+                        <span class="sponsor-address"><a href="https://polymarket.com/profile/${s.sponsor}" target="_blank">${shortAddr(s.sponsor)}</a></span>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="amount">${fmtUSD(s.total_amount_usdc)}</td>
+                  <td class="amount consumed">${fmtUSD(s.net_amount_usdc)}</td>
+                  <td class="amount consumed">${fmtUSD(s.total_consumed_usdc)}</td>
+                  <td class="amount returned">${fmtUSD(s.total_returned_usdc)}</td>
+                  <td><span class="badge badge-markets">${s.unique_markets}</span></td>
+                  <td>${s.event_count}</td>
+                  <td style="color:#6b7280">${timeAgo(s.first_seen)}</td>
+                  <td style="color:#6b7280">${timeAgo(s.last_seen)}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>`;
+      } else if (state.currentTab === 'active' || state.currentTab === 'recent') {
+        container.innerHTML = `
+          <table>
+            <thead><tr>
+              <th style="width:50px">#</th>
+              <th>Sponsor</th>
+              <th>Market</th>
+              <th>Amount</th>
+              <th>Rate/Day</th>
+              <th>Duration</th>
+              <th>Status</th>
+              <th>Time</th>
+            </tr></thead>
+            <tbody>
+              ${pageItems.map((s, i) => {
+                const rank = start + i + 1;
+                const profile = getProfile(s.sponsor);
+                const ratePerDay = (s.rate_per_minute_usdc || 0) * 1440;
+                const durationDays = ((s.duration_minutes || 0) / 1440).toFixed(1);
+                const status = s.is_cancelled ? '<span style="color:#ef4444">Cancelled</span>' :
+                               s.withdrawn_at ? '<span style="color:#f59e0b">Withdrawn</span>' :
+                               '<span style="color:#10b981">Active</span>';
+                return `<tr>
+                  <td class="rank">${rank}</td>
+                  <td>
+                    <div class="sponsor-cell">
+                      <img class="avatar" src="${profile.avatar || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect fill=%22%231e2745%22 width=%2232%22 height=%2232%22 rx=%2216%22/></svg>'}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect fill=%22%231e2745%22 width=%2232%22 height=%2232%22 rx=%2216%22/></svg>'">
+                      <div class="sponsor-info">
+                        <span class="sponsor-name">${escHtml(profile.name)}</span>
+                        <span class="sponsor-address"><a href="https://polymarket.com/profile/${s.sponsor}" target="_blank">${shortAddr(s.sponsor)}</a></span>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis">
+                    <a href="https://polymarket.com/event/${s.market_slug || ''}" target="_blank" style="color:#818cf8;text-decoration:none">${escHtml((s.market_question || '').slice(0, 60))}${(s.market_question || '').length > 60 ? '...' : ''}</a>
+                  </td>
+                  <td class="amount">${fmtUSD(s.amount_usdc)}</td>
+                  <td style="color:#8892b0">${fmtUSD(ratePerDay)}/d</td>
+                  <td style="color:#6b7280">${durationDays}d</td>
+                  <td>${status}</td>
+                  <td style="color:#6b7280">${timeAgo(s.block_timestamp)}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>`;
+      } else if (state.currentTab === 'withdrawals') {
+        container.innerHTML = `
+          <table>
+            <thead><tr>
+              <th style="width:50px">#</th>
+              <th>Sponsor</th>
+              <th>Market</th>
+              <th>Consumed</th>
+              <th>Returned</th>
+              <th>Type</th>
+              <th>Time</th>
+              <th>Tx</th>
+            </tr></thead>
+            <tbody>
+              ${pageItems.map((s, i) => {
+                const rank = start + i + 1;
+                const profile = getProfile(s.sponsor);
+                return `<tr>
+                  <td class="rank">${rank}</td>
+                  <td>
+                    <div class="sponsor-cell">
+                      <img class="avatar" src="${profile.avatar || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect fill=%22%231e2745%22 width=%2232%22 height=%2232%22 rx=%2216%22/></svg>'}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect fill=%22%231e2745%22 width=%2232%22 height=%2232%22 rx=%2216%22/></svg>'">
+                      <div class="sponsor-info">
+                        <span class="sponsor-name">${escHtml(profile.name)}</span>
+                        <span class="sponsor-address"><a href="https://polymarket.com/profile/${s.sponsor}" target="_blank">${shortAddr(s.sponsor)}</a></span>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis">
+                    <a href="https://polymarket.com/event/${s.market_slug || ''}" target="_blank" style="color:#818cf8;text-decoration:none">${escHtml((s.market_question || '').slice(0, 60))}${(s.market_question || '').length > 60 ? '...' : ''}</a>
+                  </td>
+                  <td class="amount consumed">${fmtUSD(s.consumed_usdc)}</td>
+                  <td class="amount returned">${fmtUSD(s.returned_usdc)}</td>
+                  <td>${s.is_early_withdraw ? '<span style="color:#f59e0b">Early</span>' : '<span style="color:#6b7280">Normal</span>'}</td>
+                  <td style="color:#6b7280">${timeAgo(s.block_timestamp)}</td>
+                  <td><a href="https://polygonscan.com/tx/${s.transaction_hash}" target="_blank" style="color:#6366f1;text-decoration:none;font-size:12px">View</a></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>`;
+      }
+
+      // Pagination
+      if (totalPages > 1) {
+        let pages = [];
+        pages.push(`<button class="page-btn" ${state.page === 1 ? 'disabled' : ''} onclick="goPage(${state.page - 1})">Prev</button>`);
+
+        const maxVisible = 7;
+        let startPage = Math.max(1, state.page - 3);
+        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+        if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+
+        if (startPage > 1) {
+          pages.push(`<button class="page-btn" onclick="goPage(1)">1</button>`);
+          if (startPage > 2) pages.push(`<span class="page-info">...</span>`);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+          pages.push(`<button class="page-btn ${i === state.page ? 'active' : ''}" onclick="goPage(${i})">${i}</button>`);
+        }
+
+        if (endPage < totalPages) {
+          if (endPage < totalPages - 1) pages.push(`<span class="page-info">...</span>`);
+          pages.push(`<button class="page-btn" onclick="goPage(${totalPages})">${totalPages}</button>`);
+        }
+
+        pages.push(`<button class="page-btn" ${state.page === totalPages ? 'disabled' : ''} onclick="goPage(${state.page + 1})">Next</button>`);
+        pagEl.innerHTML = pages.join('');
+      } else {
+        pagEl.innerHTML = '';
+      }
+    }
+
+    function sortArrow(field) {
+      if (state.sortField !== field) return '<span class="sort-arrow">&#x25B4;&#x25BE;</span>';
+      return state.sortDir === 'desc' ? '<span class="sort-arrow">&#x25BE;</span>' : '<span class="sort-arrow">&#x25B4;</span>';
+    }
+
+    function toggleSort(field) {
+      if (state.sortField === field) {
+        state.sortDir = state.sortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+        state.sortField = field;
+        state.sortDir = 'desc';
+      }
+      state.page = 1;
+      updateSortBtns();
+      render();
+    }
+
+    function updateSortBtns() {
+      document.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.sort === state.sortField);
+      });
+    }
+
+    function goPage(p) {
+      state.page = p;
+      render();
+      document.getElementById('table-container').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function escHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function render() {
+      renderStats();
+      renderTable();
+    }
+
+    // Event listeners
+    document.getElementById('search').addEventListener('input', (e) => {
+      state.searchQuery = e.target.value;
+      state.page = 1;
+      render();
+    });
+
+    document.querySelectorAll('.sort-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.sortField = btn.dataset.sort;
+        state.page = 1;
+        updateSortBtns();
+        render();
+      });
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.currentTab = btn.dataset.tab;
+        state.page = 1;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Show/hide sort buttons (only for leaderboard)
+        document.getElementById('sort-btns').style.display = state.currentTab === 'leaderboard' ? 'flex' : 'none';
+        render();
+      });
+    });
+
+    // Init
+    fetchData();
+  </script>
+</body>
+</html>
