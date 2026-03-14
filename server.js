@@ -306,17 +306,23 @@ async function buildFullSponsorData() {
   return result;
 }
 
-// Pre-warm on startup
+// Pre-warm on startup - store the promise so API requests can await it
+let warmupPromise = null;
 console.log('Starting server and warming cache...');
-buildFullSponsorData()
-  .then(d => console.log(`Cache ready: ${d.topSponsors.length} sponsors`))
-  .catch(e => console.error('Cache warm failed:', e.message));
+warmupPromise = buildFullSponsorData()
+  .then(d => { console.log(`Cache ready: ${d.topSponsors.length} sponsors`); return d; })
+  .catch(e => { console.error('Cache warm failed:', e.message); return null; });
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
 
   if (url.pathname === '/api/sponsored-rewards') {
     try {
+      // Wait for initial warmup if still in progress
+      if (warmupPromise) {
+        await warmupPromise;
+        warmupPromise = null;
+      }
       const data = await buildFullSponsorData();
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify(data));

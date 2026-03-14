@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.betmoar.fun)",
+      "WebSearch",
+      "WebFetch(domain:docs.polymarket.com)",
+      "WebFetch(domain:clob.polymarket.com)",
+      "WebFetch(domain:gamma-api.polymarket.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:data-api.polymarket.com)",
+      "WebFetch(domain:polymarket.com)",
+      "Bash(start:*)",
+      "Bash(python:*)",
+      "WebFetch(domain:api.polygonscan.com)",
+      "WebFetch(domain:api.etherscan.io)",
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "Bash(rm:*)"
+    ]
+  }
+}

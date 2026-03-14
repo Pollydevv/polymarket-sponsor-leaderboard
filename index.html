@@ -498,26 +498,51 @@
     }
 
     // Fetch data
-    async function fetchData() {
+    async function fetchData(retries = 3) {
       state.loading = true;
       state.error = null;
       render();
 
-      try {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error('API returned ' + res.status);
-        state.data = await res.json();
-        state.loading = false;
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+          const res = await fetch(API_URL, { signal: controller.signal });
+          clearTimeout(timeout);
+          if (!res.ok) {
+            if (res.status === 503 || res.status === 502) {
+              // Server still warming up, retry
+              state.error = 'Server is loading blockchain data... (attempt ' + attempt + '/' + retries + ')';
+              render();
+              await new Promise(r => setTimeout(r, 10000));
+              continue;
+            }
+            throw new Error('API returned ' + res.status);
+          }
+          state.data = await res.json();
+          state.loading = false;
+          state.error = null;
 
-        // Queue profile lookups for first 200 sponsors
-        if (state.data.topSponsors) {
-          state.profileQueue = state.data.topSponsors.slice(0, 200).map(s => s.sponsor);
-          loadProfiles();
+          // Queue profile lookups for first 200 sponsors
+          if (state.data.topSponsors) {
+            state.profileQueue = state.data.topSponsors.slice(0, 200).map(s => s.sponsor);
+            loadProfiles();
+          }
+          render();
+          return;
+        } catch (e) {
+          if (e.name === 'AbortError') {
+            state.error = 'Request timed out, retrying... (' + attempt + '/' + retries + ')';
+          } else {
+            state.error = e.message;
+          }
+          if (attempt < retries) {
+            render();
+            await new Promise(r => setTimeout(r, 5000));
+          }
         }
-      } catch (e) {
-        state.error = e.message;
-        state.loading = false;
       }
+      state.loading = false;
       render();
     }
 
@@ -667,7 +692,7 @@
         container.innerHTML = `
           <div class="loading-container">
             <div class="spinner"></div>
-            <div class="loading-text">Loading sponsor data...</div>
+            <div class="loading-text">${state.error || 'Loading sponsor data from Polygon blockchain... (first load may take up to 60s)'}</div>
           </div>`;
         pagEl.innerHTML = '';
         countEl.innerHTML = '';
