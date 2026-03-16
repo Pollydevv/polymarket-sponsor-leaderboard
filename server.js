@@ -387,9 +387,20 @@ async function fetchLpRewards(period = 'all') {
     sponsored = await httpsGet(LP_REWARDS_BASE + '/sponsored_rewards.json');
   } catch (e) { /* optional */ }
 
+  // Clean the earners data: filter out the rewards distribution wallet
+  // (appears in all.json as rank 0 with rewards equal to the total jackpot)
+  const REWARDS_DIST_WALLET = '0xc288480574783bd7615170660d71753378159c47';
+  let cleanEarners = Array.isArray(earners) ? earners : [];
+  cleanEarners = cleanEarners.filter(e => {
+    if (!e || !e.address) return false;
+    return e.address.toLowerCase() !== REWARDS_DIST_WALLET;
+  });
+  // Re-assign ranks starting from 1
+  cleanEarners.forEach((e, i) => { e.rank = i + 1; });
+
   const result = {
     meta: typeof meta === 'object' ? meta : {},
-    earners: Array.isArray(earners) ? earners : [],
+    earners: cleanEarners,
     sponsored: typeof sponsored === 'object' ? sponsored : null,
     period,
     fetchedAt: new Date().toISOString()
