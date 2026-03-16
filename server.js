@@ -63,9 +63,9 @@ async function rpcWithFallback(body) {
   throw new Error('All RPCs failed');
 }
 
-function httpsGet(url) {
+function httpsGet(url, timeout = 15000) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout: 15000 }, (res) => {
+    https.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, timeout }, (res) => {
       let data = '';
       res.on('data', c => data += c);
       res.on('end', () => {
@@ -378,7 +378,7 @@ async function fetchLpRewards(period = 'all') {
   } else if (period === '30d') {
     earners = await httpsGet(LP_REWARDS_BASE + '/rewards_30d.json');
   } else {
-    earners = await httpsGet(LP_REWARDS_BASE + '/top1000.json');
+    earners = await httpsGet(LP_REWARDS_BASE + '/all.json', 60000);
   }
 
   // Fetch sponsored rewards breakdown
