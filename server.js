@@ -18,6 +18,11 @@ let cacheTime = 0;
 const CACHE_TTL = 10 * 60 * 1000;
 const CACHE_FILE = path.join(__dirname, 'sponsor-cache.json');
 
+// LP Rewards cache (from polyrewards.fun)
+const LP_REWARDS_BASE = 'https://polyrewards.fun';
+let lpRewardsCache = {}; // keyed by period: { data, time }
+const LP_CACHE_TTL = 10 * 60 * 1000;
+
 function rpcCall(body, rpcIdx = 0) {
   const rpc = RPCS[rpcIdx] || RPCS[0];
   return new Promise((resolve, reject) => {
@@ -351,6 +356,50 @@ async function buildFullSponsorData() {
   return result;
 }
 
+// LP Rewards: fetch from polyrewards.fun and cache
+async function fetchLpRewards(period = 'all') {
+  const cacheKey = period;
+  const cached = lpRewardsCache[cacheKey];
+  if (cached && Date.now() - cached.time < LP_CACHE_TTL) {
+    return cached.data;
+  }
+
+  console.log(`Fetching LP rewards for period: ${period}`);
+
+  // Fetch meta.json for stats
+  const meta = await httpsGet(LP_REWARDS_BASE + '/meta.json');
+
+  // Fetch the right data file based on period
+  let earners;
+  if (period === '24h') {
+    earners = await httpsGet(LP_REWARDS_BASE + '/rewards_24h.json');
+  } else if (period === '7d') {
+    earners = await httpsGet(LP_REWARDS_BASE + '/rewards_7d.json');
+  } else if (period === '30d') {
+    earners = await httpsGet(LP_REWARDS_BASE + '/rewards_30d.json');
+  } else {
+    earners = await httpsGet(LP_REWARDS_BASE + '/top1000.json');
+  }
+
+  // Fetch sponsored rewards breakdown
+  let sponsored = null;
+  try {
+    sponsored = await httpsGet(LP_REWARDS_BASE + '/sponsored_rewards.json');
+  } catch (e) { /* optional */ }
+
+  const result = {
+    meta: typeof meta === 'object' ? meta : {},
+    earners: Array.isArray(earners) ? earners : [],
+    sponsored: typeof sponsored === 'object' ? sponsored : null,
+    period,
+    fetchedAt: new Date().toISOString()
+  };
+
+  lpRewardsCache[cacheKey] = { data: result, time: Date.now() };
+  console.log(`LP rewards (${period}): ${result.earners.length} earners loaded`);
+  return result;
+}
+
 // Pre-warm on startup - store the promise so API requests can await it
 let warmupPromise = null;
 console.log('Starting server and warming cache...');
@@ -372,6 +421,25 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
       res.end(JSON.stringify(data));
     } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
+  }
+
+  if (url.pathname === '/api/lp-rewards') {
+    try {
+      const period = url.searchParams.get('period') || 'all';
+      if (!['all', '24h', '7d', '30d'].includes(period)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid period. Use: all, 24h, 7d, 30d' }));
+        return;
+      }
+      const data = await fetchLpRewards(period);
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      res.end(JSON.stringify(data));
+    } catch (e) {
+      console.error('LP rewards error:', e.message);
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
     }

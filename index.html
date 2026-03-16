@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Polymarket Sponsor Leaderboard</title>
+  <title>Polymarket Rewards Leaderboard</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -407,6 +407,119 @@
       background: #1e2745;
     }
 
+    .period-btns {
+      display: flex;
+      gap: 4px;
+      background: #111827;
+      border: 1px solid #1e2745;
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .period-btn {
+      padding: 6px 14px;
+      border: none;
+      background: transparent;
+      color: #8892b0;
+      font-size: 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .period-btn.active {
+      background: #10b981;
+      color: white;
+    }
+
+    .period-btn:hover:not(.active) {
+      background: #1e2745;
+    }
+
+    .mode-bar {
+      display: flex;
+      gap: 12px;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 32px;
+      align-items: center;
+    }
+
+    .mode-btns {
+      display: flex;
+      gap: 4px;
+      background: #111827;
+      border: 1px solid #1e2745;
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .mode-btn {
+      padding: 8px 20px;
+      border: none;
+      background: transparent;
+      color: #8892b0;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .mode-btn.active {
+      background: #6366f1;
+      color: white;
+    }
+
+    .mode-btn:hover:not(.active) {
+      background: #1e2745;
+    }
+
+    .lp-tier-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      max-width: 1400px;
+      margin: 16px auto;
+      padding: 0 32px;
+    }
+
+    .tier-card {
+      background: #111827;
+      border: 1px solid #1e2745;
+      border-radius: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tier-card:hover, .tier-card.active {
+      border-color: #6366f1;
+      background: #131b2e;
+    }
+
+    .tier-card .tier-label {
+      font-size: 11px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .tier-card .tier-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #f9fafb;
+    }
+
+    .tier-card .tier-sub {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
     @media (max-width: 768px) {
       .header { padding: 16px; }
       .stats-bar { padding: 0 16px; grid-template-columns: repeat(2, 1fr); }
@@ -414,37 +527,67 @@
       .table-container { padding: 0 16px 16px; }
       .pagination { padding: 16px; }
       td, th { padding: 8px 10px; font-size: 13px; }
+      .mode-bar { padding: 0 16px; }
+      .lp-tier-cards { padding: 0 16px; grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="header-inner">
-      <h1>Polymarket Sponsor Leaderboard</h1>
-      <p>Track all users sponsoring market rewards on Polymarket</p>
+      <h1>Polymarket Rewards Leaderboard</h1>
+      <p>Track sponsors and liquidity providers on Polymarket</p>
     </div>
   </div>
 
-  <div class="stats-bar" id="stats-bar"></div>
+  <div class="mode-bar" style="margin-top:20px;margin-bottom:16px">
+    <div class="mode-btns">
+      <button class="mode-btn active" data-mode="sponsors">Sponsors</button>
+      <button class="mode-btn" data-mode="lp-rewards">LP Rewards</button>
+    </div>
+  </div>
 
-  <div class="controls">
-    <div class="search-box">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-      </svg>
-      <input type="text" id="search" placeholder="Search by username, address, or market...">
+  <div id="sponsors-section">
+    <div class="stats-bar" id="stats-bar"></div>
+
+    <div class="controls">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input type="text" id="search" placeholder="Search by username, address, or market...">
+      </div>
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="leaderboard">Leaderboard</button>
+        <button class="tab-btn" data-tab="active">Active Sponsorships</button>
+        <button class="tab-btn" data-tab="recent">Recent</button>
+        <button class="tab-btn" data-tab="withdrawals">Withdrawals</button>
+      </div>
+      <div class="sort-btns" id="sort-btns">
+        <button class="sort-btn active" data-sort="total_amount_usdc">Total Funded</button>
+        <button class="sort-btn" data-sort="net_amount_usdc">Net Spent</button>
+        <button class="sort-btn" data-sort="total_consumed_usdc">Consumed</button>
+        <button class="sort-btn" data-sort="unique_markets">Markets</button>
+      </div>
     </div>
-    <div class="tab-bar">
-      <button class="tab-btn active" data-tab="leaderboard">Leaderboard</button>
-      <button class="tab-btn" data-tab="active">Active Sponsorships</button>
-      <button class="tab-btn" data-tab="recent">Recent</button>
-      <button class="tab-btn" data-tab="withdrawals">Withdrawals</button>
-    </div>
-    <div class="sort-btns" id="sort-btns">
-      <button class="sort-btn active" data-sort="total_amount_usdc">Total Funded</button>
-      <button class="sort-btn" data-sort="net_amount_usdc">Net Spent</button>
-      <button class="sort-btn" data-sort="total_consumed_usdc">Consumed</button>
-      <button class="sort-btn" data-sort="unique_markets">Markets</button>
+  </div>
+
+  <div id="lp-section" style="display:none">
+    <div class="stats-bar" id="lp-stats-bar"></div>
+
+    <div class="controls">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input type="text" id="lp-search" placeholder="Search by username or address...">
+      </div>
+      <div class="period-btns" id="period-btns">
+        <button class="period-btn" data-period="24h">24h</button>
+        <button class="period-btn" data-period="7d">7d</button>
+        <button class="period-btn" data-period="30d">30d</button>
+        <button class="period-btn active" data-period="all">All</button>
+      </div>
     </div>
   </div>
 
@@ -454,10 +597,12 @@
 
   <script>
     const API_URL = '/api/sponsored-rewards';
+    const LP_API_URL = '/api/lp-rewards';
     const PROFILE_URL = '/api/profile';
     const PAGE_SIZE = 50;
 
     let state = {
+      mode: 'sponsors', // 'sponsors' or 'lp-rewards'
       data: null,
       profiles: {},
       currentTab: 'leaderboard',
@@ -468,7 +613,14 @@
       loading: true,
       error: null,
       profileQueue: [],
-      loadingProfiles: false
+      loadingProfiles: false,
+      // LP Rewards state
+      lpData: null,
+      lpPeriod: 'all',
+      lpSearchQuery: '',
+      lpPage: 1,
+      lpLoading: false,
+      lpError: null
     };
 
     // Format currency
@@ -574,7 +726,7 @@
       }
 
       state.loadingProfiles = false;
-      render();
+      if (state.mode === 'lp-rewards') { renderLp(); } else { render(); }
 
       if (state.profileQueue.length > 0) {
         setTimeout(loadProfiles, 100);
@@ -921,6 +1073,230 @@
       renderTable();
     }
 
+    // ========== LP REWARDS ==========
+
+    async function fetchLpRewards(period) {
+      if (period === undefined) period = state.lpPeriod;
+      state.lpLoading = true;
+      state.lpError = null;
+      renderLp();
+
+      try {
+        const res = await fetch(LP_API_URL + '?period=' + period);
+        if (!res.ok) throw new Error('API returned ' + res.status);
+        state.lpData = await res.json();
+        state.lpLoading = false;
+        state.lpError = null;
+
+        // Queue profile lookups for top earners
+        if (state.lpData.earners) {
+          const addrs = state.lpData.earners.slice(0, 100).map(e => e.address);
+          for (const addr of addrs) {
+            if (!state.profiles[addr] && !state.profileQueue.includes(addr)) {
+              state.profileQueue.push(addr);
+            }
+          }
+          if (!state.loadingProfiles) setTimeout(loadProfiles, 50);
+        }
+        renderLp();
+      } catch (e) {
+        state.lpLoading = false;
+        state.lpError = e.message;
+        renderLp();
+      }
+    }
+
+    function renderLpStats() {
+      const el = document.getElementById('lp-stats-bar');
+      if (!state.lpData || !state.lpData.meta) { el.innerHTML = ''; return; }
+      const m = state.lpData.meta;
+      const periodLabel = state.lpPeriod === 'all' ? 'All Time' : state.lpPeriod.toUpperCase();
+      const earnerCount = state.lpData.earners ? state.lpData.earners.length : 0;
+      const jackpot = m.jackpot_rewards || (m.rewards ? m.rewards.jackpot : 0) || 0;
+      const topWallet = m.top_wallet_rewards || (m.rewards ? m.rewards.top : 0) || 0;
+      el.innerHTML = `
+        <div class="stat-card" title="Total USDC distributed to liquidity providers as rewards">
+          <div class="label">Total Distributed</div>
+          <div class="value green">${fmtUSD(jackpot)}</div>
+        </div>
+        <div class="stat-card" title="Highest single-wallet reward amount">
+          <div class="label">Top Earner</div>
+          <div class="value orange">${fmtUSD(topWallet)}</div>
+        </div>
+        <div class="stat-card" title="Total wallets that have received LP rewards">
+          <div class="label">Total Wallets</div>
+          <div class="value purple">${fmtNum(m.total || 0)}</div>
+        </div>
+        <div class="stat-card" title="Minimum rewards to be in the top 1% of earners">
+          <div class="label">Top 1% Threshold</div>
+          <div class="value blue">${fmtUSD(m.thresholds ? m.thresholds.top1 : 0)}</div>
+        </div>
+        <div class="stat-card" title="Minimum rewards to be in the top 10% of earners">
+          <div class="label">Top 10% Threshold</div>
+          <div class="value">${fmtUSD(m.thresholds ? m.thresholds.top10 : 0)}</div>
+        </div>
+        <div class="stat-card" title="Showing top earners for this period">
+          <div class="label">Showing (${periodLabel})</div>
+          <div class="value">${fmtNum(earnerCount)}</div>
+        </div>
+      `;
+    }
+
+    function getLpFiltered() {
+      if (!state.lpData || !state.lpData.earners) return [];
+      let items = [...state.lpData.earners];
+      const q = state.lpSearchQuery.toLowerCase();
+      if (q) {
+        items = items.filter(e => {
+          const addr = (e.address || '').toLowerCase();
+          const name = (e.name || '').toLowerCase();
+          const profile = state.profiles[addr] || {};
+          const profileName = (profile.name || '').toLowerCase();
+          return addr.includes(q) || name.includes(q) || profileName.includes(q);
+        });
+      }
+      return items;
+    }
+
+    function renderLpTable() {
+      const container = document.getElementById('table-container');
+      const pagEl = document.getElementById('pagination');
+      const countEl = document.getElementById('result-count');
+
+      if (state.lpLoading) {
+        container.innerHTML = `
+          <div class="loading-container">
+            <div class="spinner"></div>
+            <div class="loading-text">${state.lpError || 'Loading LP rewards data...'}</div>
+          </div>`;
+        pagEl.innerHTML = '';
+        countEl.innerHTML = '';
+        return;
+      }
+
+      if (state.lpError) {
+        container.innerHTML = `
+          <div class="error-container">
+            <h2>Failed to load LP rewards</h2>
+            <p style="color:#6b7280">${state.lpError}</p>
+            <button onclick="fetchLpRewards()">Retry</button>
+          </div>`;
+        pagEl.innerHTML = '';
+        countEl.innerHTML = '';
+        return;
+      }
+
+      const items = getLpFiltered();
+      const totalPages = Math.ceil(items.length / PAGE_SIZE);
+      if (state.lpPage > totalPages) state.lpPage = 1;
+      const start = (state.lpPage - 1) * PAGE_SIZE;
+      const pageItems = items.slice(start, start + PAGE_SIZE);
+
+      const totalCount = state.lpData.earners ? state.lpData.earners.length : 0;
+      const filtered = state.lpSearchQuery && items.length < totalCount;
+      countEl.innerHTML = `<span class="result-count">Showing ${items.length > 0 ? start + 1 : 0}-${Math.min(start + PAGE_SIZE, items.length)} of ${items.length}${filtered ? ' matches (out of ' + totalCount.toLocaleString() + ' total)' : ' earners'}</span>`;
+
+      container.innerHTML = `
+        <table>
+          <thead><tr>
+            <th style="width:50px">#</th>
+            <th>Earner</th>
+            <th title="Total USDC earned from liquidity rewards">Rewards (USDC)</th>
+          </tr></thead>
+          <tbody>
+            ${pageItems.map((e, i) => {
+              const rank = start + i + 1;
+              const addr = (e.address || '').toLowerCase();
+              const profile = state.profiles[addr] || {};
+              const displayName = e.name || profile.name || shortAddr(e.address);
+              const avatar = profile.avatar || null;
+              const rankClass = rank <= 3 ? ' rank-' + rank : '';
+              return `<tr>
+                <td class="rank${rankClass}">${rank}</td>
+                <td>
+                  <div class="sponsor-cell">
+                    <img class="avatar" src="${avatar || `data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect fill=%22%231e2745%22 width=%2232%22 height=%2232%22 rx=%2216%22/><text x=%2216%22 y=%2221%22 text-anchor=%22middle%22 fill=%22%236b7280%22 font-size=%2214%22>${(displayName[0] || '?').toUpperCase()}</text></svg>`}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect fill=%22%231e2745%22 width=%2232%22 height=%2232%22 rx=%2216%22/></svg>'">
+                    <div class="sponsor-info">
+                      <span class="sponsor-name">${escHtml(displayName)}</span>
+                      <span class="sponsor-address"><a href="https://polymarket.com/profile/${e.address}" target="_blank">${shortAddr(e.address)}</a></span>
+                    </div>
+                  </div>
+                </td>
+                <td class="amount">${fmtUSD(e.rewards)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+
+      // Pagination
+      if (totalPages > 1) {
+        let pages = [];
+        pages.push(`<button class="page-btn" ${state.lpPage === 1 ? 'disabled' : ''} onclick="goLpPage(${state.lpPage - 1})">Prev</button>`);
+        const maxVisible = 7;
+        let startPage = Math.max(1, state.lpPage - 3);
+        let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+        if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+        if (startPage > 1) {
+          pages.push(`<button class="page-btn" onclick="goLpPage(1)">1</button>`);
+          if (startPage > 2) pages.push(`<span class="page-info">...</span>`);
+        }
+        for (let i = startPage; i <= endPage; i++) {
+          pages.push(`<button class="page-btn ${i === state.lpPage ? 'active' : ''}" onclick="goLpPage(${i})">${i}</button>`);
+        }
+        if (endPage < totalPages) {
+          if (endPage < totalPages - 1) pages.push(`<span class="page-info">...</span>`);
+          pages.push(`<button class="page-btn" onclick="goLpPage(${totalPages})">${totalPages}</button>`);
+        }
+        pages.push(`<button class="page-btn" ${state.lpPage === totalPages ? 'disabled' : ''} onclick="goLpPage(${state.lpPage + 1})">Next</button>`);
+        pagEl.innerHTML = pages.join('');
+      } else {
+        pagEl.innerHTML = '';
+      }
+    }
+
+    function goLpPage(p) {
+      state.lpPage = p;
+      renderLp();
+      document.getElementById('table-container').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderLp() {
+      renderLpStats();
+      renderLpTable();
+    }
+
+    // ========== MODE SWITCHING ==========
+
+    function switchMode(mode) {
+      state.mode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+
+      const sponsorsSection = document.getElementById('sponsors-section');
+      const lpSection = document.getElementById('lp-section');
+
+      if (mode === 'sponsors') {
+        sponsorsSection.style.display = '';
+        lpSection.style.display = 'none';
+        render();
+      } else {
+        sponsorsSection.style.display = 'none';
+        lpSection.style.display = '';
+        if (!state.lpData && !state.lpLoading) {
+          fetchLpRewards();
+        } else {
+          renderLp();
+        }
+      }
+    }
+
+    function renderAll() {
+      if (state.mode === 'sponsors') {
+        render();
+      } else {
+        renderLp();
+      }
+    }
+
     // Event listeners
     document.getElementById('search').addEventListener('input', (e) => {
       state.searchQuery = e.target.value;
@@ -948,6 +1324,29 @@
         document.getElementById('sort-btns').style.display = state.currentTab === 'leaderboard' ? 'flex' : 'none';
         render();
       });
+    });
+
+    // Mode switching
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchMode(btn.dataset.mode));
+    });
+
+    // LP period switching
+    document.querySelectorAll('.period-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.lpPeriod = btn.dataset.period;
+        state.lpPage = 1;
+        document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        fetchLpRewards(state.lpPeriod);
+      });
+    });
+
+    // LP search
+    document.getElementById('lp-search').addEventListener('input', (e) => {
+      state.lpSearchQuery = e.target.value;
+      state.lpPage = 1;
+      renderLp();
     });
 
     // Init
