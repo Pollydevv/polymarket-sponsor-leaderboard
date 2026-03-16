@@ -1145,6 +1145,8 @@
     function getLpFiltered() {
       if (!state.lpData || !state.lpData.earners) return [];
       let items = [...state.lpData.earners];
+      // Assign global rank before filtering so search results keep their real rank
+      items.forEach((e, i) => { e._globalRank = e.rank || (i + 1); });
       const q = state.lpSearchQuery.toLowerCase();
       if (q) {
         items = items.filter(e => {
@@ -1205,7 +1207,7 @@
           </tr></thead>
           <tbody>
             ${pageItems.map((e, i) => {
-              const rank = start + i + 1;
+              const rank = e._globalRank || (start + i + 1);
               const addr = (e.address || '').toLowerCase();
               const profile = state.profiles[addr] || {};
               const displayName = e.name || profile.name || shortAddr(e.address);
